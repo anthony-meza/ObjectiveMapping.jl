@@ -64,6 +64,9 @@ jobs:
         run: |
           julia --project=docs/ -e '
             using Pkg
+            Pkg.add(url="https://github.com/ggebbie/AlgebraicArrays.jl.git")
+            Pkg.add(url="https://github.com/ggebbie/BLUEs.jl.git")
+
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()'
       - uses: julia-actions/julia-buildpkg@v1
