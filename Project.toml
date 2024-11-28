@@ -1,0 +1,13 @@
+name = "ObjectiveMapping"
+uuid = "a289a2a3-c9e9-4e63-a3b2-242434c87307"
+authors = ["A Meza"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.11"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
