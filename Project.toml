@@ -3,7 +3,35 @@ uuid = "a289a2a3-c9e9-4e63-a3b2-242434c87307"
 authors = ["A Meza"]
 version = "1.0.0-DEV"
 
+[deps]
+AlgebraicArrays = "8af735f6-f3e5-4048-bdaa-40a2355e9eea"
+BLUEs = "b3a7f272-e305-45d1-bcf3-14d22bb67726"
+DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
+IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+PythonPlot = "274fc56d-3b97-40fa-a1cd-1b4a50311bf9"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+ToeplitzMatrices = "c751599d-da0a-543b-9d20-d0a503d91d24"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
 [compat]
+AlgebraicArrays = "1.0.6"
+BLUEs = "0.2.5"
+DimensionalData = "0.29.2"
+IJulia = "1.26.0"
+LinearAlgebra = "1.11.0"
+Measurements = "2.11.0"
+Plots = "1.40.9"
+PlutoUI = "0.7.60"
+PythonPlot = "1.0.5"
+Random = "1.11.0"
+SparseArrays = "1.11.0"
+ToeplitzMatrices = "0.8.4"
+Unitful = "1.21.0"
 julia = "1.11"
 
 [extras]
