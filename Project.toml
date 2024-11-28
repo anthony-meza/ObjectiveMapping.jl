@@ -19,7 +19,7 @@ ToeplitzMatrices = "c751599d-da0a-543b-9d20-d0a503d91d24"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
-AlgebraicArrays = "^1.0.0"
+AlgebraicArrays = "1.0.6"
 BLUEs = "0.2.5"
 DimensionalData = "0.29.2"
 Distributions = "0.25.113"
