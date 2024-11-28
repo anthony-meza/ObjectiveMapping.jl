@@ -1,5 +1,2 @@
 [deps]
-AlgebraicArrays = "8af735f6-f3e5-4048-bdaa-40a2355e9eea"
-BLUEs = "b3a7f272-e305-45d1-bcf3-14d22bb67726"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-ObjectiveMapping = "a289a2a3-c9e9-4e63-a3b2-242434c87307"
