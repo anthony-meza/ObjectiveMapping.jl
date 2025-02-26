@@ -1,0 +1,51 @@
+name: Pluto Export
+on:
+  push:
+    branches:
+      - main
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  # Skip intermediate builds: always.
+  # Cancel intermediate builds: only if it is a pull request build.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+jobs:
+  export-pluto:
+    name: Export Pluto Notebooks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - name: Install dependencies
+        run: |
+          julia --project=pluto -e '
+            using Pkg
+            Pkg.add(url="https://github.com/ggebbie/AlgebraicArrays.jl.git")
+            Pkg.add(url="https://github.com/ggebbie/BLUEs.jl.git")
+            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.add("PlutoSliderServer")
+            Pkg.instantiate()'
+      - name: Export Pluto notebooks
+        run: |
+          julia --project=pluto -e '
+            using PlutoSliderServer
+            PlutoSliderServer.github_action("."; 
+              Export_cache_dir="pluto_state_cache",
+              Export_baked_notebookfile=false,
+              Export_baked_state=false
+            )'
+      - name: Commit HTML files to repository
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add '**/*.html'
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update Pluto notebook exports [skip ci]"
+          git push

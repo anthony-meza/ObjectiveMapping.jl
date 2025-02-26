@@ -76,6 +76,6 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
-            using OceanDynamicalModes
-            DocMeta.setdocmeta!(OceanDynamicalModes, :DocTestSetup, :(using OceanDynamicalModes); recursive=true)
-            doctest(OceanDynamicalModes)'
+            using ObjectiveMapping
+            DocMeta.setdocmeta!(ObjectiveMapping, :DocTestSetup, :(using ObjectiveMapping); recursive=true)
+            doctest(ObjectiveMapping)'
