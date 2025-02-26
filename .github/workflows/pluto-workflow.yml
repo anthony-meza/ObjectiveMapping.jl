@@ -1,16 +1,12 @@
 name: Pluto Export
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
     branches:
       - main
-    tags: ['*']
-  pull_request:
   workflow_dispatch:
-concurrency:
-  # Skip intermediate builds: always.
-  # Cancel intermediate builds: only if it is a pull request build.
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 jobs:
   export-pluto:
     name: Export Pluto Notebooks
@@ -30,22 +26,85 @@ jobs:
             Pkg.add(url="https://github.com/ggebbie/AlgebraicArrays.jl.git")
             Pkg.add(url="https://github.com/ggebbie/BLUEs.jl.git")
             Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.add("PlutoSliderServer")
+            Pkg.add("PlutoStaticHTML")
+            Pkg.add("ProcessCapture")
             Pkg.instantiate()'
+          # Install wkhtmltopdf for PDF conversion
+          sudo apt-get update -y
+          sudo apt-get install -y wkhtmltopdf
       - name: Export Pluto notebooks
         run: |
           julia --project=pluto -e '
-            using PlutoSliderServer
-            PlutoSliderServer.github_action("."; 
-              Export_cache_dir="pluto_state_cache",
-              Export_baked_notebookfile=false,
-              Export_baked_state=false
-            )'
-      - name: Commit HTML files to repository
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+            using PlutoStaticHTML
+            using ProcessCapture  # For running wkhtmltopdf
+            
+            # Clean up any existing HTML output directory
+            if isdir("html_output")
+              rm("html_output", recursive=true)
+              println("Cleaned up previous HTML output directory")
+            end
+            
+            # Create temporary HTML output directory
+            mkpath("html_output")
+            
+            # Find all Pluto notebooks recursively
+            notebooks = filter(endswith(".jl"), readdir(".", recursive=true))
+            
+            # Export each notebook
+            for notebook in notebooks
+              try
+                # Skip non-Pluto notebooks (simple heuristic check)
+                content = read(notebook, String)
+                if !occursin("### A Pluto.jl notebook ###", content)
+                  println("Skipping non-Pluto notebook: $notebook")
+                  continue
+                end
+                
+                println("Exporting: $notebook")
+                # Get paths
+                dir = dirname(notebook)
+                base = basename(notebook, ".jl")
+                
+                # Create temp HTML file path for conversion
+                html_dir = "html_output"
+                html_file = joinpath(html_dir, "$(base)_temp.html")
+                
+                # Final PDF goes in same directory as notebook
+                pdf_file = joinpath(dir, "$(base).pdf")
+                
+                try
+                  # Export to temporary HTML
+                  PlutoStaticHTML.notebook_to_html(notebook, html_file)
+                  println("Exported temporary HTML to: $html_file")
+                  
+                  # Convert HTML to PDF using wkhtmltopdf and put in same folder as notebook
+                  println("Converting to PDF...")
+                  cmd = `wkhtmltopdf --enable-local-file-access --no-background --page-size A4 "$html_file" "$pdf_file"`
+                  result = ProcessCapture.run(cmd)
+                  
+                  if result.exitcode == 0
+                    println("Successfully exported PDF to: $pdf_file")
+                  else
+                    println("Error creating PDF from $html_file: $(result.stderr)")
+                  end
+                catch e
+                  println("Error exporting $notebook: $e")
+                end
+              catch e
+                println("Error processing $notebook: $e")
+              end
+            end
+            
+            # Clean up temporary HTML files
+            if isdir("html_output")
+              rm("html_output", recursive=true)
+              println("Cleaned up temporary HTML files")
+            end'
+      - name: Commit PDF files to repository
+        if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add '**/*.html'
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update Pluto notebook exports [skip ci]"
+          git add '**/*.pdf'
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update Pluto notebook PDF exports [skip ci]"
           git push
