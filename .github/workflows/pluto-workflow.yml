@@ -33,8 +33,21 @@ jobs:
           julia --project=pluto -e '
             using PlutoPDF
             
+            # Function to find files recursively (compatible with all Julia versions)
+            function find_files(dir, extension)
+              files = String[]
+              for (root, _, fs) in walkdir(dir)
+                for f in fs
+                  if endswith(f, extension)
+                    push!(files, joinpath(root, f))
+                  end
+                end
+              end
+              return files
+            end
+            
             # Find all Pluto notebooks recursively
-            notebooks = filter(endswith(".jl"), readdir(".", recursive=true))
+            notebooks = find_files(".", ".jl")
             
             # Export each notebook
             for notebook in notebooks
