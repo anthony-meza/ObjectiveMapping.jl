@@ -1,4 +1,4 @@
-name: Pluto Export
+name: Pluto PDF Export
 on:
   workflow_run:
     workflows: ["CI"]
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 jobs:
   export-pluto:
-    name: Export Pluto Notebooks
+    name: Export Pluto Notebooks to PDF
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -26,26 +26,12 @@ jobs:
             Pkg.add(url="https://github.com/ggebbie/AlgebraicArrays.jl.git")
             Pkg.add(url="https://github.com/ggebbie/BLUEs.jl.git")
             Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.add("PlutoStaticHTML")
-            Pkg.add("ProcessCapture")
+            Pkg.add("PlutoPDF")
             Pkg.instantiate()'
-          # Install wkhtmltopdf for PDF conversion
-          sudo apt-get update -y
-          sudo apt-get install -y wkhtmltopdf
-      - name: Export Pluto notebooks
+      - name: Export Pluto notebooks to PDF
         run: |
           julia --project=pluto -e '
-            using PlutoStaticHTML
-            using ProcessCapture  # For running wkhtmltopdf
-            
-            # Clean up any existing HTML output directory
-            if isdir("html_output")
-              rm("html_output", recursive=true)
-              println("Cleaned up previous HTML output directory")
-            end
-            
-            # Create temporary HTML output directory
-            mkpath("html_output")
+            using PlutoPDF
             
             # Find all Pluto notebooks recursively
             notebooks = filter(endswith(".jl"), readdir(".", recursive=true))
@@ -61,44 +47,22 @@ jobs:
                 end
                 
                 println("Exporting: $notebook")
-                # Get paths
+                
+                # Get the output path (same directory as the notebook)
                 dir = dirname(notebook)
                 base = basename(notebook, ".jl")
-                
-                # Create temp HTML file path for conversion
-                html_dir = "html_output"
-                html_file = joinpath(html_dir, "$(base)_temp.html")
-                
-                # Final PDF goes in same directory as notebook
                 pdf_file = joinpath(dir, "$(base).pdf")
                 
                 try
-                  # Export to temporary HTML
-                  PlutoStaticHTML.notebook_to_html(notebook, html_file)
-                  println("Exported temporary HTML to: $html_file")
-                  
-                  # Convert HTML to PDF using wkhtmltopdf and put in same folder as notebook
-                  println("Converting to PDF...")
-                  cmd = `wkhtmltopdf --enable-local-file-access --no-background --page-size A4 "$html_file" "$pdf_file"`
-                  result = ProcessCapture.run(cmd)
-                  
-                  if result.exitcode == 0
-                    println("Successfully exported PDF to: $pdf_file")
-                  else
-                    println("Error creating PDF from $html_file: $(result.stderr)")
-                  end
+                  # Export to PDF using PlutoPDF
+                  PlutoPDF.pluto_to_pdf(notebook, pdf_file)
+                  println("Successfully exported PDF to: $pdf_file")
                 catch e
-                  println("Error exporting $notebook: $e")
+                  println("Error exporting $notebook to PDF: $e")
                 end
               catch e
                 println("Error processing $notebook: $e")
               end
-            end
-            
-            # Clean up temporary HTML files
-            if isdir("html_output")
-              rm("html_output", recursive=true)
-              println("Cleaned up temporary HTML files")
             end'
       - name: Commit PDF files to repository
         if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
