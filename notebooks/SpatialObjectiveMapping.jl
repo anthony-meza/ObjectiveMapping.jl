@@ -38,19 +38,17 @@ begin
 	using Unitful, UnitfulLinearAlgebra
 	using InteractiveUtils
 	using Random
-	km = u"km" # for the grid size
-	cm = u"cm" # for SSH (mapped variable)
 	# pythonplot()
 end
 
 # ╔═╡ a48c4115-8e05-4510-b215-94bd9a374941
 begin 
-
+	km = u"km" # for the grid size
+	cm = u"cm" # for SSH (mapped variable)
 	Nx = 50 # number of gridpoint in first (zonal) direction
 	ΔX = 1000km # domain size in zonal direction
 	Ny = 40 # number of gridpoints in second (meridional) direction
 	ΔY = 500km
-	
 	
 	rx = range(0km,ΔX,length=Nx) # make grid axis number 1: zonal distance
 	ry = range(0km,ΔY,length=Ny)  # grid axis number 2: meridional distance
@@ -61,16 +59,45 @@ begin
 
 end
 
+# ╔═╡ b9845c85-06f6-4950-abd2-69f516c51e1b
+begin 
+    function rosenbrock_parameters()
+        return PlutoUI.combine() do Child
+            inputs = [
+                md""" **a:** $(
+                    Child("a", Slider(1:0.1:4, default=3, show_value=true))
+                ) """,
+                
+                md""" **b:** $(
+                    Child("b", Slider(0.1:0.1:5.0, default=0.5, show_value=true))
+                )""",
+            ]
+            
+            md"""
+            #### Rosenbrock Function Parameters: $f(x,y)=(a-x)^{2}+b(y-x^{2})^{2}$
+            $(inputs)
+            """
+        end
+    end
+	# In another cell, bind the parameters
+	@bind rosen_params rosenbrock_parameters()
+end
+
 # ╔═╡ 4b99b673-d890-4aa2-acc3-fb545b4fc479
 begin 
 	#store the 2D ordered points
 	gx, gy = meshgrid(rx,ry)
 
-	rosenbrok(x, y) = (3- x)^2 + 0.5 * (y - x^2)^2
+	rosenbrok(x, y) = (rosen_params.a- x)^2 + rosen_params.b * (y - x^2)^2
 	ηtrue = 1cm .* rosenbrok.(gx ./ mean(gx), gy ./ mean(gy))
+	vmin, vmax = extrema(ustrip.(ηtrue))
+	vmin, vmax = (vmin * 0.9, vmax * 1.1)
+	levels = LinRange(vmin, vmax, 20)
+	cmap = :Spectral
 
 	contourf(rx, ry, ηtrue,xlabel="zonal distance",
-	    ylabel="meridional distance",clabels=true,title="true SSH",fill=true, levels = collect(0:0.5:10))
+	    ylabel="meridional distance",clabels=true,title="true SSH",
+		fill=true, levels = levels, clims=(vmin, vmax), cmap = cmap)
 
 end
 
@@ -100,9 +127,6 @@ end
 # In another cell, bind the parameters
 @bind obs_settings observation_parameters()
 
-# ╔═╡ 450be15f-dca6-4061-85e3-e290d5f4a1c1
-obs_settings.obs_percent
-
 # ╔═╡ 69deeb60-46a6-470a-8e09-47dfc0cd8bce
 begin 
 	obs_percent = obs_settings.obs_percent / 100  # Convert percentage to fraction
@@ -129,8 +153,11 @@ begin
 	
 	p = contourf(rx, ry, ηtrue,xlabel="zonal distance",
 	    ylabel="meridional distance",clabels=true,
-	    title="true SSH with $Nobs obs",fill=true, vmin = 0, vmax = 10)
-	scatter!(p, rxobs,ryobs,zcolor=yvals,label="y",cbar=true,markersize=6, vmin = 0, vmax = 10)
+	    title="true SSH with $Nobs obs",fill=true, 
+		levels = levels, clims=(vmin, vmax), cmap = cmap)
+	scatter!(p, rxobs,ryobs,zcolor=yvals,label="y",
+		cbar=true,markersize=6, 
+	levels = levels, clims=(vmin, vmax), cmap = cmap)
 
 end
 
@@ -188,11 +215,6 @@ begin
 	
 	x̃ = combine(x0, y, E)
 	x̃field = reshape(x̃.v,Nx,Ny); # turn it back into 2D
-	
-	vmin, vmax = 0, 11
-	levels = collect(0:0.5:10)
-	colorbar_ticks = 0:2:10  # Create explicit tick positions
-
 
 	# Create the first contour plot with horizontal colorbar
 	p4 = contourf(rx, ry, x̃field', 
@@ -201,7 +223,7 @@ begin
 	    ylabel="meridional distance", xlabel="zonal distance",
 	    colorbar=true,
 	    colorbar_horizontal=true,
-	    bottom_margin=20Plots.mm)  # Add margin for the colorbar
+	    bottom_margin=20Plots.mm, cmap = cmap)  # Add margin for the colorbar
 	
 	# Create the second contour plot with horizontal colorbar
 	p5 = contourf(rx, ry, ηtrue, 
@@ -210,23 +232,23 @@ begin
 	    xlabel="zonal distance", 
 	    colorbar=true,
 	    colorbar_horizontal=true,
-	    bottom_margin=20Plots.mm)  # Add margin for the colorbar
+	    bottom_margin=20Plots.mm, cmap = cmap)  # Add margin for the colorbar
 	
 	# Combine plots side by side
 	plot(p4, p5, layout=(1,2), size=(900, 450))
 end
 
 # ╔═╡ Cell order:
-# ╠═44d6fbeb-0253-4a5b-b810-3108a88963c3
+# ╟─44d6fbeb-0253-4a5b-b810-3108a88963c3
 # ╠═e3b69a7f-cad0-4535-b691-a2d53c586581
 # ╠═a48c4115-8e05-4510-b215-94bd9a374941
+# ╟─b9845c85-06f6-4950-abd2-69f516c51e1b
 # ╠═4b99b673-d890-4aa2-acc3-fb545b4fc479
 # ╟─2c732a10-c15c-4b19-a16d-9ea5750ea441
-# ╠═80367e0f-47fe-4180-be46-eda106e0cf15
-# ╠═450be15f-dca6-4061-85e3-e290d5f4a1c1
+# ╟─80367e0f-47fe-4180-be46-eda106e0cf15
 # ╠═69deeb60-46a6-470a-8e09-47dfc0cd8bce
 # ╟─8ae938a0-de85-47ab-89c8-436d2ec8d2d1
 # ╠═1e86504d-d29c-471b-90e6-402dd4e3e4d3
 # ╠═bb27f5f9-54a5-41c0-958b-160488c6f552
 # ╟─dc3bb5fe-d692-47dd-ab6a-1a9576db604c
-# ╟─4aef1f8b-ac28-4e25-a319-3a94052c4cf4
+# ╠═4aef1f8b-ac28-4e25-a319-3a94052c4cf4
