@@ -30,7 +30,7 @@ begin
 	using Distributions
 	using ToeplitzMatrices
 	using PlutoUI
-	using PyPlot
+	using Plots
 end
 
 # ╔═╡ 908bb398-8442-47c3-8563-cd2f72bd6ab8
@@ -38,9 +38,12 @@ begin
 	plot_uncertainty(xgrid, x̃, σx̃; color = "red", alpha = 0.2) = plot(xgrid, x̃ - 2σx̃, fillrange = x̃  + 2σx̃, color = color, alzpha = 0.2, label = nothing) 
 
 	plot_uncertainty!(xgrid, x̃, σx̃; color = "red", alpha = 0.2) =  plot!(xgrid, x̃ - 2σx̃, fillrange = x̃  + 2σx̃, color = color, alpha = 0.2, label = nothing) 
+
+	plot_uncertainty!(p, xgrid, x̃, σx̃; color = "red", alpha = 0.2) =  plot!(p, xgrid, x̃ - 2σx̃, fillrange = x̃  + 2σx̃, color = color, alpha = alpha, 
+	label = nothing) 
 	
-	plot_uncertainty!(ax, xgrid, x̃, σx̃; color = "red", alpha = 0.2) =  ax.fill_between(xgrid, x̃ - (2*σx̃), x̃ + (2*σx̃), color=color, alpha=alpha, 
-		label=nothing)
+	# plot_uncertainty!(ax, xgrid, x̃, σx̃; color = "red", alpha = 0.2) =  ax.fill_between(xgrid, x̃ - (2*σx̃), x̃ + (2*σx̃), color=color, alpha=alpha, 
+	# 	label=nothing)
 end
 
 # ╔═╡ 19ca3f75-3005-43fe-9762-b4b1c910677c
@@ -78,7 +81,7 @@ begin
 			]
 			
 			md"""
-			#### Function Parameters
+			#### Objective Function Parameters
 			$(inputs)
 			"""
 		end
@@ -118,10 +121,9 @@ begin # Function to generate the data with the current parameters
 	xgrid = generate_grid(parameters)
 	y_analytical = generate_data(parameters, xgrid)
 
-	fig, ax = subplots()
-	ax.plot(xgrid, y_analytical, color = "black", label = "True Function", 
-      alpha = 1, linestyle = "--", lw = 2)
-	fig
+	plot(xgrid, y_analytical, color = "black", label = "True Function", 
+      alpha = 1, linestyle = :dash, lw = 2)
+	# fig
 end
 
 # ╔═╡ d8db1a46-f40e-4f86-a61b-21cf319ceceb
@@ -157,13 +159,23 @@ begin
 	obsgrid = rand(Uniform(minimum(xgrid), maximum(xgrid)), nobs) 
 	yobs = generate_data(parameters, obsgrid) .+ rand(Normal(0, σn), nobs)
 
-	fig1, ax1 = subplots()
-	ax1.scatter(obsgrid, yobs, label = "Contaminated Observations", 
-        alpha = 0.1, color = "black")
-	ax1.plot(xgrid, y_analytical, color = "black", label = "True Function", 
-      alpha = 1, linestyle = "--", lw = 2)
-	ax1.set_xlabel("time")
-	fig1
+	# Create the plot
+	p = scatter(obsgrid, yobs, 
+	    label = "Contaminated Observations", 
+	    alpha = 0.1, 
+	    color = :black,
+	    xlabel = "time",
+	    legend = :topleft  # Adjust legend position as needed
+	)
+	
+	# Add the line plot
+	plot!(p, xgrid, y_analytical, 
+	    label = "True Function", 
+	    color = :black, 
+	    alpha = 1, 
+	    linestyle = :dash, 
+	    linewidth = 2
+	)
 end
 
 # ╔═╡ 87ee8498-c807-4364-bc65-c504a13aa10c
@@ -177,21 +189,29 @@ begin
 	
 	x̃b, σx̃b = ObjectiveMapping.gauss_markov_mapping(ObjectiveMapping.BLUESMapping(), yobs, obsgrid, xgrid; Lt = Lt, σx = σx, σn = σn)
 		
-	# First create a base plot with contaminated observations and true function
-	fig2, axs = subplots(1, 2, figsize = (10, 5))
-	for axx in axs
-		axx.scatter(obsgrid, yobs, label = "Contaminated Observations", 
-		        alpha = 0.1, c = "black")
-		axx.plot(xgrid, y_analytical, color = "black", label = "True Function", 
-		      alpha = 1, linestyle = "--", lw = 2)
-	end
-	axs[1].plot(xgrid, x̃, color = "red", label = "Gauss-Markov")
-	plot_uncertainty!(axs[1], xgrid, x̃, σx̃; color = "orange", alpha = 0.3)
+	# Create a 1×2 subplot layout
+	p1 = plot(layout = (1, 2), size = (1000, 500), legend = :outertop)
 	
-	axs[2].plot(xgrid, x̃b, color = "purple", label = "BLUES.jl")
-	plot_uncertainty!(axs[2], xgrid, x̃b, σx̃b; color = "purple", alpha = 0.3)
-	[axx.legend() for axx in axs]
-	fig2
+	# Create the base plots with shared elements for both subplots
+	for i in 1:2
+	    # Add contaminated observations
+	    scatter!(p1[i], obsgrid, yobs, 
+	        label = "Contaminated Observations", 
+	        alpha = 0.1, 
+	        color = :black)
+	    
+	    # Add true function
+	    plot!(p1[i], xgrid, y_analytical, 
+	        label = "True Function", 
+	        color = :black, 
+	        alpha = 1, 
+	        linestyle = :dash, 
+	        linewidth = 2)
+	end
+	
+	plot!(p1[1], xgrid, x̃, ribbon=(2*σx̃, 2*σx̃), fillalpha=0.3, fillcolor=:orange, linewidth=2, linecolor=:orange, label="Explicit Gauss-Markov (95% Conf. Int.)")
+
+	plot!(p1[2], xgrid, x̃, ribbon=(2*σx̃, 2*σx̃), fillalpha=0.3, fillcolor=:purple, linewidth=2, linecolor=:purple, label="using BLUES.jl (95% Conf. Int.)")
 
 end
 
