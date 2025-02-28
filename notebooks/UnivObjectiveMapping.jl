@@ -29,10 +29,8 @@ begin
 	using LinearAlgebra, Random
 	using Distributions
 	using ToeplitzMatrices
-	# using Plots, 
 	using PlutoUI
-	using PythonPlot
-	# # pythonplot()
+	using PyPlot
 end
 
 # ╔═╡ 908bb398-8442-47c3-8563-cd2f72bd6ab8
@@ -132,7 +130,7 @@ function observation_inputs()
         
         inputs = [
             md""" **Noise standard deviation (σn):** $(
-                Child("σn", Slider(0.0:0.1:10.0, default=5.0, show_value=true))
+                Child("σn", Slider(0.0:0.1:10.0, default=2.0, show_value=true))
             )""",
             
             md""" **Observation percentage (%):** $(
@@ -187,12 +185,12 @@ begin
 		axx.plot(xgrid, y_analytical, color = "black", label = "True Function", 
 		      alpha = 1, linestyle = "--", lw = 2)
 	end
-	axs[0].plot(xgrid, x̃, color = "red", label = "Gauss-Markov")
-	plot_uncertainty!(axs[0], xgrid, x̃, σx̃; color = "orange", alpha = 0.3)
+	axs[1].plot(xgrid, x̃, color = "red", label = "Gauss-Markov")
+	plot_uncertainty!(axs[1], xgrid, x̃, σx̃; color = "orange", alpha = 0.3)
 	
-	axs[1].plot(xgrid, x̃b, color = "purple", label = "BLUES.jl")
-	plot_uncertainty!(axs[1], xgrid, x̃b, σx̃b; color = "purple", alpha = 0.3)
-	
+	axs[2].plot(xgrid, x̃b, color = "purple", label = "BLUES.jl")
+	plot_uncertainty!(axs[2], xgrid, x̃b, σx̃b; color = "purple", alpha = 0.3)
+	[axx.legend() for axx in axs]
 	fig2
 
 end
@@ -201,11 +199,11 @@ end
 # ╠═44d6fbeb-0253-4a5b-b810-3108a88963c3
 # ╠═e3b69a7f-cad0-4535-b691-a2d53c586581
 # ╠═908bb398-8442-47c3-8563-cd2f72bd6ab8
-# ╠═19ca3f75-3005-43fe-9762-b4b1c910677c
+# ╟─19ca3f75-3005-43fe-9762-b4b1c910677c
 # ╠═8aaae11b-8dc9-4587-9293-2c05703f2ea7
 # ╠═c0de3bd3-4a78-45c6-9bf7-910f240731a9
 # ╠═1a1bd0e2-feb7-4532-af21-96692b939710
 # ╠═d8db1a46-f40e-4f86-a61b-21cf319ceceb
-# ╠═214be50e-c796-4861-a3b1-85f6ea5d5b7c
+# ╟─214be50e-c796-4861-a3b1-85f6ea5d5b7c
 # ╠═21f79e54-396f-4f8d-88bd-1478372185f0
 # ╠═87ee8498-c807-4364-bc65-c504a13aa10c
